@@ -112,9 +112,7 @@ public class GameState extends State{
 	@Override
 	protected void render() {
 		// TODO Auto-generated method stub
-		long lastTime = System.nanoTime();
 		float delta = Gdx.graphics.getDeltaTime();
-		System.out.print("\r" + "delta (ms): " + (delta * 1000));
 		
 	    doPhysicsStep(delta);
 	    
@@ -136,9 +134,6 @@ public class GameState extends State{
 	    
 	    sendUDPBroadcast();
 	    
-	    double elapsedTime = (System.nanoTime() - lastTime) / 1_000_000.0;
-	    System.out.print(" frame time: " + elapsedTime + " ms");
-	    
 	}
 
 	@Override
@@ -153,7 +148,7 @@ public class GameState extends State{
 		System.out.println("Closed Receiver");
 	}
 
-	@Override
+	@Override 
 	protected void resize(int width, int height) {
 		// TODO Auto-generated method stub
 	}
@@ -251,10 +246,11 @@ public class GameState extends State{
 			
 			if(aplayer.getHealth() <= 0) {
 				if(aplayer.getRespawnTime() > 3) {
+					aplayer.respawn();
 					aplayer.addDamage(-100);
 					aplayer.addScorePoints(-20);
-					body.setLinearVelocity(0, 0);
 					body.setTransform((5 + 3 * random.nextInt(5)), 15, 0);
+					body.setLinearVelocity(0, 0.01f);
 					aplayer.resetRespawnTime();
 				}
 				else {
@@ -277,11 +273,10 @@ public class GameState extends State{
 		StringBuilder udpbroadcast = new StringBuilder();
 		
 		for(Player aplayer : players) {
-			PlayerWorld playerworld = playersmap.get(aplayer);
-			Vector2 position = playerworld.getBody().getPosition();
-			udpbroadcast.append(position.x);
+			Sprite sprite = aplayer.getSprite();
+			udpbroadcast.append(sprite.getX());
 			udpbroadcast.append(',');
-			udpbroadcast.append(position.y);
+			udpbroadcast.append(sprite.getY());
 			
 			udpbroadcast.append('#');
 			
@@ -469,11 +464,11 @@ public class GameState extends State{
 			body.applyForceToCenter(0.1f, 0, false);
 		}
 		
-		if((encoded >> 3) % 2 == 1){
+		if(launchcount < 3 && (encoded >> 3) % 2 == 1){
 			player.setPowerLevel(player.getPowerLevel() == -1? 0 : -1);
 		}
 		
-		if(player.getPowerLevel() != -1) {
+		if(launchcount < 3 && player.getPowerLevel() != -1) {
 			adjustAngle(getPowerAngleInputs(inputs));
 			
 			touchInput((encoded >> 4) % 2 == 1, playerworld);

@@ -18,8 +18,9 @@ public class ServerThread {
 	
 	public void run() {
 		try(ServerSocket serverSocket = new ServerSocket(1323);){
+			System.out.println("Version 1.5.0");
     		while(true) {
-    			System.out.println("Version 1.5.0");
+    			
     			System.out.println("Server Waiting for new Connections...");
     			Socket clientSocket = serverSocket.accept();
     			Thread newClient = new Thread(new nonGameThread(clientSocket, this));

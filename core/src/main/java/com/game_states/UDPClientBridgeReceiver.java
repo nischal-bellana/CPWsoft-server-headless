@@ -41,12 +41,10 @@ public class UDPClientBridgeReceiver implements Runnable{
 			try {
 				String return_message = receiveMessage();
 				
-				System.out.println(return_message);
-				
 				if(return_message.charAt(0) == 'h') {
 					udpbridgesender.addClient(packet.getAddress(), packet.getPort());
 					sendMessage("pass", packet.getAddress(), packet.getPort());
-					System.out.println("registered " + packet.getAddress() + " " + packet.getPort());
+					
 					continue;
 				}
 				

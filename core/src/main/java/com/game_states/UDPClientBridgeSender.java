@@ -8,6 +8,7 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import com.badlogic.gdx.utils.Array;
@@ -19,6 +20,7 @@ public class UDPClientBridgeSender implements Runnable{
 	private byte[] content;
 	private Array<InetAddress> clientips;
 	private Array<Integer> ports;
+	private HashSet<String> ipports;
 	
 	private ConcurrentLinkedQueue<String> messages;
 	private ConcurrentLinkedQueue<String> return_messages;
@@ -33,6 +35,8 @@ public class UDPClientBridgeSender implements Runnable{
 		
 		clientips = new Array<>();
 		ports = new Array<>();
+		
+		ipports = new HashSet<String>();
 		
 	}
 	
@@ -110,10 +114,20 @@ public class UDPClientBridgeSender implements Runnable{
     }
 	
 	public synchronized void addClient(InetAddress address, int port) {
-		if(clientips.contains(address, true)) return;
+		String s = address.getHostAddress() + ":" + port;
+		
+		if(ipports.contains(s)) {
+			System.out.println("Already contains: " + s);
+			return;
+		}
+		
+		ipports.add(s);
 		
 		clientips.add(address);
 		ports.add(port);
+		
+		System.out.println("registered " + s);
+		
 	}
 	
 	public int getClientIPSize() {
