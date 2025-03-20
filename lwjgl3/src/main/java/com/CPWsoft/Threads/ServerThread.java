@@ -5,6 +5,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.HashMap;
 
+import com.utils.ParsingUtils;
+
 public class ServerThread {
 	private int clientcount = 0;
 	private HashMap<String, Room> roommap;
@@ -54,10 +56,8 @@ public class ServerThread {
 			
 			if(!compareByFilter(roomname) ||roommap.get(roomname).isGameStarted()) continue;
 			
-			str.append(roomname);
-			str.append("&");
-			str.append(roommap.get(roomname).size());
-			str.append(",");
+			String roomdata = roomname + '&' + roommap.get(roomname).size();
+			ParsingUtils.appendData(roomdata, str);
 		}
 		
 		return str.toString();

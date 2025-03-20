@@ -4,6 +4,7 @@ import java.util.Deque;
 import java.util.HashMap;
 
 import com.badlogic.gdx.utils.Array;
+import com.utils.ParsingUtils;
 
 public class Room {
 	private ServerThread serverthread;
@@ -92,10 +93,9 @@ public class Room {
 	public synchronized String getUsersList() {
 		StringBuilder str = new StringBuilder();
 		for(nonGameThread client: clients) {
-			str.append(client.getName());
-			str.append("&");
-			str.append(client.isReady()? "p" : "f");
-			str.append(",");
+			String clientdata = client.getName() + '&' + (client.isReady()? "p" : "f");
+			
+			ParsingUtils.appendData(clientdata, str);
 		}
 		return str.toString();
 	}

@@ -48,6 +48,7 @@ import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.utils.Clipping;
+import com.utils.ParsingUtils;
 import com.utils.PointNode;
 import com.utils.WorldUtils;
 import com.utils.polygonGen;
@@ -81,6 +82,7 @@ public class GameState extends State{
 	private UDPClientBridgeSender udpbridgesender;
 	private UDPClientBridgeReceiver udpbridgereceiver;
 	private StringBuilder broadcast;
+	private StringBuilder udpbroadcast;
 	
 	private float timer = 0;
 	private float turntimer = 0;
@@ -103,6 +105,7 @@ public class GameState extends State{
 		world.setContactListener(new myContactListener());
 		random = new Random();
 		broadcast = new StringBuilder();
+		udpbroadcast = new StringBuilder();
 		
 		initUDPServerBridge();
 		
@@ -269,14 +272,12 @@ public class GameState extends State{
 	}
 	
 	private void sendUDPBroadcast() {
-		
-		StringBuilder udpbroadcast = new StringBuilder();
-		
-		for(Player aplayer : players) {
+		for(int i = 0; i < players.size; i++) {
+			Player aplayer = players.get(i);
 			Sprite sprite = aplayer.getSprite();
-			udpbroadcast.append(sprite.getX());
+			udpbroadcast.append(sprite.getX() + (sprite.getWidth()/2));
 			udpbroadcast.append(',');
-			udpbroadcast.append(sprite.getY());
+			udpbroadcast.append(sprite.getY() + (sprite.getHeight()/2));
 			
 			udpbroadcast.append('#');
 			
@@ -312,108 +313,97 @@ public class GameState extends State{
 		
 		udpbroadcast.append((int)(turntime - turntimer));
 		
-		udpbridgesender.addMessage(udpbroadcast.toString());
+		if(udpbroadcast.length() > 0) {
+			udpbridgesender.addMessage(udpbroadcast.toString());
+			udpbroadcast = new StringBuilder();
+		}
 	}
 	
 	private void sendBroadcast() {
 		
-		if(removedindicesbroadcast != null) {
-			broadcast.append('p');
-			broadcast.append(removedindicesbroadcast);
+		if(removedindicesbroadcast != null) {;
+			removedindicesbroadcast.insert(0, 'p');
+			ParsingUtils.appendData(removedindicesbroadcast.toString(), broadcast);
 			removedindicesbroadcast = null;
-			broadcast.append(':');
+			
 		}
 		
 		if(inputchanged) {
-			broadcast.append('i');
-			broadcast.append(roomconnection.getInputIndex());
 			inputchanged = false;
-			broadcast.append(':');
+			ParsingUtils.appendData("i" + roomconnection.getInputIndex(), broadcast);
 		}
 		
 		boolean atleastone = false;
 		
-		for(Player aplayer : players) {
+		StringBuilder damagedata = null;
+		
+		for(int i = 0; i < players.size; i++) {
+			Player aplayer = players.get(i);
 			int damage = aplayer.pollDamage();
 			if(damage != -1) {
 				if(!atleastone) {
-					broadcast.append('d');
+					damagedata = new StringBuilder('d');
 					atleastone = true;
 				}
 				
-				broadcast.append(players.indexOf(aplayer, true));
-				broadcast.append('&');
-				broadcast.append(damage);
+				ParsingUtils.appendData(i + "&" + damage, damagedata);
 				aplayer.damageBy(damage);
-				broadcast.append(',');
 			}
-			
 		}
 		if(atleastone) {
-			broadcast.deleteCharAt(broadcast.length() - 1);
-			broadcast.append(':');
+			ParsingUtils.appendData(damagedata.toString(), broadcast);
 		}
 		
 		atleastone = false;
 		
-		for(Player aplayer : players) {
-			
+		StringBuilder scoredata = null;
+		
+		for(int i = 0; i < players.size; i++) {
+			Player aplayer = players.get(i);
 			int scorepoint = aplayer.pollScorePoint();
 			if(scorepoint != -1) {
 				if(!atleastone) {
-					broadcast.append('s');
+					scoredata = new StringBuilder('s');
 					atleastone = true;
 				}
 				
-				broadcast.append(players.indexOf(aplayer, true));
-				broadcast.append('&');
-				broadcast.append(scorepoint);
+				ParsingUtils.appendData(i + "&" + scorepoint, scoredata);
 				aplayer.scoreBy(scorepoint);
-				broadcast.append(',');
 			}
 		}
-		
 		if(atleastone) {
-			broadcast.deleteCharAt(broadcast.length() - 1);
-			broadcast.append(':');
+			ParsingUtils.appendData(scoredata.toString(), broadcast);
 		}
 		
 		if(bombsaddqueue.size - bombsremovequeue.size != 0) {
-			broadcast.append('b');
-			broadcast.append(bombsaddqueue.size - bombsremovequeue.size);
+			ParsingUtils.appendData("b" + (bombsaddqueue.size - bombsremovequeue.size), broadcast);
 			bombsaddqueue.clear();
 			bombsremovequeue.clear();
-			broadcast.append(':');
 		}
 		
 		atleastone = false;
 		
+		StringBuilder grounddata = null;
+		
 		if(groundworld.shouldBroadcastCreate()) {
-			broadcast.append('g');
 			atleastone = true;
-			broadcast.append('c');
-			groundworld.getBroadcastCreate(broadcast);
-			broadcast.append('&');
+			grounddata = new StringBuilder('g');
+			groundworld.getBroadcastCreate(grounddata);
 		}
 		
 		if(groundworld.shouldBroadcastDestroy()) {
 			if(!atleastone) {
-				broadcast.append('g');
 				atleastone = true;
+				grounddata = new StringBuilder('g');
 			}
-			
-			broadcast.append('d');
-			groundworld.getBroadcastDestroy(broadcast);
-			broadcast.append('&');
+			groundworld.getBroadcastDestroy(grounddata);
 		}
 		
 		if(atleastone) {
-			broadcast.deleteCharAt(broadcast.length() - 1);
-			broadcast.append(':');
+			ParsingUtils.appendData(grounddata.toString(), broadcast);
 		}
 		
 		if(broadcast.length() > 0) {
-			broadcast.deleteCharAt(broadcast.length() - 1);
 			roomconnection.addBroadcast(broadcast.toString());
 			broadcast = new StringBuilder();
 		}
@@ -553,7 +543,7 @@ public class GameState extends State{
 		while(removedindex != -1) {
 			
 			removedindicesbroadcast.append(removedindex);
-			removedindicesbroadcast.append(',');
+			removedindicesbroadcast.append('&');
 			
 			Player aplayer = players.removeIndex(removedindex);
 			PlayerWorld playerworld = playersmap.remove(aplayer);
@@ -633,7 +623,7 @@ public class GameState extends State{
 		
 		if(i >= inputs.length()) return 0;
 		
-		return Float.parseFloat(inputs.substring(i));
+		return ParsingUtils.parseFloat(i, inputs.length(), inputs);
 	}
 	
 }

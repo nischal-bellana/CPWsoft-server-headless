@@ -7,6 +7,7 @@ import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.badlogic.gdx.physics.box2d.PolygonShape;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Queue;
+import com.utils.ParsingUtils;
 import com.utils.PointNode;
 import com.utils.WorldUtils;
 
@@ -167,33 +168,35 @@ public class GroundWorld {
 		broadcastcreate.addLast(arr);
 	}
 	
-	public String getBroadcastCreate(StringBuilder str) {
-		
+	public void getBroadcastCreate(StringBuilder grounddata) {
+		StringBuilder str = new StringBuilder('c');
 		while(!broadcastcreate.isEmpty()) {
 			float[] fixture = broadcastcreate.removeFirst();
+			StringBuilder fixtureverts = new StringBuilder();
+			fixtureverts.append(fixture.length);
+			fixtureverts.append('&');
 			for(int i = 0; i < fixture.length; i++) {
-				str.append(fixture[i]);
-				str.append(',');
+				fixtureverts.append(fixture[i]);
+				fixtureverts.append('&');
 			}
-			str.deleteCharAt(str.length()-1);
-			str.append('c');
+			fixtureverts.deleteCharAt(fixtureverts.length() - 1);
+			ParsingUtils.appendData(fixtureverts.toString(), str);
 		}
-		str.deleteCharAt(str.length()-1);
 		
-		return str.toString();
+		ParsingUtils.appendData(str.toString(), grounddata);
 		
 	}
 	
-	public String getBroadcastDestroy(StringBuilder str) {
-		
+	public void getBroadcastDestroy(StringBuilder grounddata) {
+		StringBuilder str = new StringBuilder('d');
 		while(!broadcastdestroy.isEmpty()) {
 			int index = broadcastdestroy.removeFirst();
 			str.append(index);
-			str.append('d');
+			str.append('&');
 		}
 		str.deleteCharAt(str.length()-1);
 		
-		return str.toString();
+		ParsingUtils.appendData(str.toString(), grounddata);
 		
 	}
 	

@@ -5,6 +5,7 @@ import java.net.*;
 import java.util.Random;
 
 import com.Connection.RoomConnection;
+import com.utils.ParsingUtils;
 
 public class nonGameThread implements Runnable {
 	public static final char[] IDletters = {'0', '1', '2', '3', '4'
@@ -45,18 +46,19 @@ public class nonGameThread implements Runnable {
 				
 				if(requests == null) break;
 
-				String[] requestssplitted = requests.split(";");
 				StringBuilder responses = new StringBuilder();
 				
-				for(String request: requestssplitted) {
-
-					String response = request.substring(0, 2) + requestHandler(request);
+				for(int i = 0; i < requests.length();) {
 					
-					responses.append(response);
-					responses.append(';');
+					int start = ParsingUtils.getBeginIndex(i, requests, '&');
+					int end = start + ParsingUtils.parseInt(i, start - 1, requests);
+					
+					String response = requests.substring(start, start + 2) + requestHandler(start, end, requests);
+					ParsingUtils.appendData(response, responses);
+					
+					i = end;
 				}
 				
-				responses.deleteCharAt(responses.length() - 1);
 				out.println(responses.toString());
 			}
 			closeThread();
@@ -68,28 +70,28 @@ public class nonGameThread implements Runnable {
 		
 	}
 	
-	public String requestHandler(String request) throws IOException, InterruptedException {
-		if(request.length() < 2) return "f";
+	public String requestHandler(int start, int end, String requests) throws IOException, InterruptedException {
+		if(end - start < 2) return "f";
 		
-		switch(request.charAt(0)) {
+		switch(requests.charAt(start)) {
 		case 'c':
-			return commonHandler(request);
+			return commonHandler(start, end, requests);
 		case 'h':
-			return HomeHandler(request);
+			return HomeHandler(start, end, requests);
 		case 'l':
-			return LobbyHandler(request);
+			return LobbyHandler(start, end, requests);
 		case 'r':
-			return RoomHandler(request);
+			return RoomHandler(start, end, requests);
 		case 'g':
-			return GameHandler(request);
+			return GameHandler(start, end, requests);
 		}
 		
 		return "f";
 	}
 	
-	public String commonHandler(String request) {
+	public String commonHandler(int start, int end, String requests) {
 		
-		if(request.charAt(1) == 'o') {
+		if(requests.charAt(start + 1) == 'o') {
 			if(!clientcountchanged) return "f";
 			clientcountchanged = false;
 			return "p" + serverthread.getClientCount();
@@ -98,12 +100,12 @@ public class nonGameThread implements Runnable {
 		return "f";
 	}
 	
-	public String HomeHandler(String request) {
-		if(request.charAt(1) == 'b') {
+	public String HomeHandler(int start, int end, String requests) {
+		if(requests.charAt(start + 1) == 'b') {
 			return "p";
 		}
 		
-		if(request.charAt(1) == 'o') {
+		if(requests.charAt(start + 1) == 'o') {
 			markClientCountChanged();
 			return "p";
 		}
@@ -111,8 +113,8 @@ public class nonGameThread implements Runnable {
 		return "f";
 	}
 	
-	public String LobbyHandler(String request) throws SocketException, InterruptedException {
-		if(request.charAt(1) == 'r') {
+	public String LobbyHandler(int start, int end, String requests) throws SocketException, InterruptedException {
+		if(requests.charAt(start + 1) == 'r') {
 			if(lobbystatecontainer.roomschanged) {
 				lobbystatecontainer.roomschanged = false;
 				return "p" + serverthread.getRoomsData();
@@ -120,22 +122,22 @@ public class nonGameThread implements Runnable {
 			return "f";
 		}
 		
-		if(request.charAt(1) == 'f') {
+		if(requests.charAt(start + 1) == 'f') {
 			
-			String filter = request.substring(2);
+			String filter = requests.substring(start + 2, end);
 			serverthread.setRoomFilter(filter);
 			
 			return "p" + serverthread.getRoomsData();
 		}
 		
-		if(request.charAt(1) == 'j' && request.length() >= 3) {
-			String roomname = request.substring(2);
+		if(requests.charAt(start + 1) == 'j' && end - start >= 3) {
+			String roomname = requests.substring(start + 2, end);
 			roomstatecontainer.room = serverthread.joinRoom(this, roomname);
 			if(roomstatecontainer.room == null) return "f";
 			roomstatecontainer.userslistchanged = true;
 			return "p" + roomname;
 		}
-		if(request.charAt(1) == 'c') {
+		if(requests.charAt(start + 1) == 'c') {
 			String roomname = generateID();
 			if(!serverthread.createRoom(roomname)) return "f";
 			roomstatecontainer.room = serverthread.joinRoom(this, roomname);
@@ -146,27 +148,27 @@ public class nonGameThread implements Runnable {
 		return "f";
 	}
 	
-	public String RoomHandler(String request) {
+	public String RoomHandler(int start, int end, String requests) {
 		if(roomstatecontainer.room == null) return "f";
 		
-		if(request.charAt(1) == 'i') {
+		if(requests.charAt(start + 1) == 'i') {
 			roomstatecontainer.userslistchanged = true;
 			roomstatecontainer.ready = false;
 			return "p";
 		}
 		
-		if(request.charAt(1) == 'b') {
+		if(requests.charAt(start + 1) == 'b') {
 			roomstatecontainer.room.removeClient(this);
 			roomstatecontainer.room = null;
 			return "p";
 		}
-		if(request.charAt(1) == 'n') {
+		if(requests.charAt(start + 1) == 'n') {
 			return "p" + roomstatecontainer.room.size();
 		}
-		if(request.charAt(1) == 'h' && request.length() >= 3) {
+		if(requests.charAt(start + 1) == 'h' && end - start >= 3) {
 			int chatIndex = 0;
 			try {
-				chatIndex = Integer.parseInt(request.substring(2));
+				chatIndex = ParsingUtils.parseInt(start + 2, end, requests);
 			} catch (Exception e) {
 				// TODO: handle exception
 				return "f";
@@ -176,24 +178,24 @@ public class nonGameThread implements Runnable {
 			
 			return "p" + roomstatecontainer.room.getChatEntries(chatIndex);
 		}
-		if(request.charAt(1) == 'u') {
+		if(requests.charAt(start + 1) == 'u') {
 			if(!roomstatecontainer.userslistchanged) return "f";
 			String list = roomstatecontainer.room.getUsersList();
 			if(list.length() == 0) return "f";
 			return "p" + list;
 		} 
-		if(request.charAt(1) == 'm' && request.length() >= 3) {
-			String message = request.substring(2);
+		if(requests.charAt(start + 1) == 'm' && end - start >= 3) {
+			String message = requests.substring(start + 2, end);
 			addChat(message);
 			return "p";
 		}
-		if(request.charAt(1) == 'r') {
+		if(requests.charAt(start + 1) == 'r') {
 			toggleReady();
 			roomstatecontainer.room.markUsersListChanged();
 			roomstatecontainer.room.checkAllReady();
 			return "p";
 		}
-		if(request.charAt(1) == 'a') {
+		if(requests.charAt(start + 1) == 'a') {
 			if(!isReady()) return "f1";
 			
 			if(!roomstatecontainer.room.isAllReady()) return "f2";
@@ -210,13 +212,13 @@ public class nonGameThread implements Runnable {
 		return "f";
 	}
 	
-	private String GameHandler(String request) {
+	private String GameHandler(int start, int end, String requests) {
 		
-		if(request.charAt(1) == 'n') {
+		if(requests.charAt(start + 1) == 'n') {
 			return "p" + roomstatecontainer.room.getIndex(this) + "&" + roomstatecontainer.room.getNamesAsString();
 		}
 		
-		if(request.charAt(1) == 'b') {
+		if(requests.charAt(start + 1) == 'b') {
 			if(!roomstatecontainer.room.isGameStarted()) return "f";
 			
 			String broadcast = roomstatecontainer.room.getBroadcast(this);
@@ -225,15 +227,15 @@ public class nonGameThread implements Runnable {
 			return "p" + broadcast;
 		}
 		
-		if(request.charAt(1) == 'i' && request.length() >= 3) {
+		if(requests.charAt(start + 1) == 'i' && end - start >= 3) {
 			if(!roomstatecontainer.room.isGameStarted() || !roomstatecontainer.room.isInput(this)) return "f";
 			
-			roomstatecontainer.room.addInput(request.substring(2));
+			roomstatecontainer.room.addInput(requests.substring(start + 2, end));
 			
 			return "p";
 		}
 		
-		if(request.charAt(1) == 'g') {
+		if(requests.charAt(start + 1) == 'g') {
 			return roomstatecontainer.room.isGameStarted() ? "p" : "f";
 		}
 		
@@ -298,11 +300,11 @@ public class nonGameThread implements Runnable {
 	private boolean registerClient() throws IOException {
 		name = in.readLine();
 		if(serverthread.containsClient(name)) {
-			out.println("f");
+			out.println("1&f");
 			closeThread();
 			return false;
 		}
-		out.println("p");
+		out.println("1&p");
 		serverthread.addClient(name, this);
 		prefix = "Client " + name + ": ";
 		System.out.println(prefix + "new Client connected and running");
