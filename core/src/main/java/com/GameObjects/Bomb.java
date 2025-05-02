@@ -26,13 +26,13 @@ public class Bomb {
 		
 		float len = (dx*dx) + (dy*dy);
 		
-		if(Math.abs(len) < 0.0001) {
+		if(Math.abs(len) > 0.0001) {
 			lastsprite.setPosition(sprite.getX(), sprite.getY());
 			return true;
 		}
 		
 		float da = sprite.getRotation() - lastsprite.getRotation();
-		if(Math.abs(da) < 0.1) {
+		if(Math.abs(da) > 0.1) {
 			lastsprite.setRotation(sprite.getRotation());
 			return true;
 		}

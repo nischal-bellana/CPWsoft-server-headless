@@ -371,7 +371,7 @@ public class GameState extends State{
 			int damage = aplayer.pollDamage();
 			if(damage != -1) {
 				if(!atleastone) {
-					damagedata = new StringBuilder('d');
+					damagedata = new StringBuilder("d");
 					atleastone = true;
 				}
 				
@@ -392,7 +392,7 @@ public class GameState extends State{
 			int scorepoint = aplayer.pollScorePoint();
 			if(scorepoint != -1) {
 				if(!atleastone) {
-					scoredata = new StringBuilder('s');
+					scoredata = new StringBuilder("s");
 					atleastone = true;
 				}
 				
@@ -416,14 +416,14 @@ public class GameState extends State{
 		
 		if(groundworld.shouldBroadcastCreate()) {
 			atleastone = true;
-			grounddata = new StringBuilder('g');
+			grounddata = new StringBuilder("g");
 			groundworld.getBroadcastCreate(grounddata);
 		}
 		
 		if(groundworld.shouldBroadcastDestroy()) {
 			if(!atleastone) {
 				atleastone = true;
-				grounddata = new StringBuilder('g');
+				grounddata = new StringBuilder("g");
 			}
 			groundworld.getBroadcastDestroy(grounddata);
 		}
@@ -471,6 +471,7 @@ public class GameState extends State{
 		int encoded = getBitEncodedInputs(inputs);
 		
 		if(encoded % 2 == 1) {
+			System.out.println("pressed up");
 			if(playerworld.inContact())
 			body.setLinearVelocity(0, 5);
 		}
@@ -484,6 +485,7 @@ public class GameState extends State{
 		}
 		
 		if(launchcount < 3 && (encoded >> 3) % 2 == 1){
+			System.out.println("pressed space");
 			player.setPowerLevel(player.getPowerLevel() == -1? 0 : -1);
 		}
 		

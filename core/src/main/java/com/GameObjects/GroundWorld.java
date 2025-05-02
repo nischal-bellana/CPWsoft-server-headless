@@ -169,7 +169,7 @@ public class GroundWorld {
 	}
 	
 	public void getBroadcastCreate(StringBuilder grounddata) {
-		StringBuilder str = new StringBuilder('c');
+		StringBuilder str = new StringBuilder("c");
 		while(!broadcastcreate.isEmpty()) {
 			float[] fixture = broadcastcreate.removeFirst();
 			StringBuilder fixtureverts = new StringBuilder();
@@ -188,7 +188,7 @@ public class GroundWorld {
 	}
 	
 	public void getBroadcastDestroy(StringBuilder grounddata) {
-		StringBuilder str = new StringBuilder('d');
+		StringBuilder str = new StringBuilder("d");
 		while(!broadcastdestroy.isEmpty()) {
 			int index = broadcastdestroy.removeFirst();
 			str.append(index);

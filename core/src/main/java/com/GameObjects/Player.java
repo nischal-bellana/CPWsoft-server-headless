@@ -129,19 +129,19 @@ public class Player {
 		
 		float len = (dx*dx) + (dy*dy);
 		
-		if(Math.abs(len) < 0.0001) {
+		if(Math.abs(len) > 0.0001) {
 			lastsprite.setPosition(sprite.getX(), sprite.getY());
 			return true;
 		}
 		
 		float da = powersprite.getRotation() - lastangle;
-		if(Math.abs(da) < 0.1) {
+		if(Math.abs(da) > 0.1) {
 			lastangle = powersprite.getRotation();
 			return true;
 		}
 		
 		if(lastpowerindicatorLevel != powerindicatorLevel) {
-			powerindicatorLevel = lastpowerindicatorLevel;
+			lastpowerindicatorLevel = powerindicatorLevel;
 			return true;
 		}
 		
