@@ -192,11 +192,8 @@ public class Room {
 		namesasstring = new StringBuilder();
 		
 		for(nonGameThread client : clients) {
-			namesasstring.append(client.getName());
-			namesasstring.append(',');
+			ParsingUtils.appendData(client.getName(), namesasstring);
 		}
-		
-		namesasstring.deleteCharAt(namesasstring.length() - 1);
 		
 		return namesasstring.toString();
 		

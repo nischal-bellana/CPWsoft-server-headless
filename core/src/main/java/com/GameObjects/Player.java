@@ -20,6 +20,7 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 
 public class Player {
 	private Sprite sprite;
+	private Sprite lastsprite;
 	private String name;
 	private int health = 100;
 	private int score = 0;
@@ -28,6 +29,8 @@ public class Player {
 	private float respawntime = 0;
 	
 	private Sprite powersprite;
+	private float lastangle = 0;
+	private int lastpowerindicatorLevel = -1;
 	private int powerindicatorLevel = -1;
 	
 	public Player(String name) {
@@ -39,6 +42,7 @@ public class Player {
 		
 		sprite = new Sprite();
 		sprite.setBounds(0, 0, 0.4f, 0.4f);
+		lastsprite = new Sprite();
 		
 		powersprite = new Sprite();
 		powersprite.setBounds(0, 0, 1, 1);
@@ -117,6 +121,32 @@ public class Player {
 	
 	public void centerSpriteToHere(float x, float y) {
 		sprite.setCenter(x, y);
+	}
+	
+	public boolean changedSignificantly() {
+		float dx = sprite.getX() - lastsprite.getX();
+		float dy = sprite.getY() - lastsprite.getY();
+		
+		float len = (dx*dx) + (dy*dy);
+		
+		if(Math.abs(len) < 0.0001) {
+			lastsprite.setPosition(sprite.getX(), sprite.getY());
+			return true;
+		}
+		
+		float da = powersprite.getRotation() - lastangle;
+		if(Math.abs(da) < 0.1) {
+			lastangle = powersprite.getRotation();
+			return true;
+		}
+		
+		if(lastpowerindicatorLevel != powerindicatorLevel) {
+			powerindicatorLevel = lastpowerindicatorLevel;
+			return true;
+		}
+		
+		return false;
+		
 	}
 	
 	public void updatePowerIndicator() {

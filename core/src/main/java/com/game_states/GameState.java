@@ -86,6 +86,7 @@ public class GameState extends State{
 	
 	private float timer = 0;
 	private float turntimer = 0;
+	private float prevtimer = 0;
 	private boolean gameended = false;
 	private boolean shouldexit = false;
 	private boolean inputchanged = false;
@@ -272,51 +273,79 @@ public class GameState extends State{
 	}
 	
 	private void sendUDPBroadcast() {
+		
+		StringBuilder playersdata = null;
+		
 		for(int i = 0; i < players.size; i++) {
 			Player aplayer = players.get(i);
-			Sprite sprite = aplayer.getSprite();
-			udpbroadcast.append(sprite.getX() + (sprite.getWidth()/2));
-			udpbroadcast.append(',');
-			udpbroadcast.append(sprite.getY() + (sprite.getHeight()/2));
-			
-			udpbroadcast.append('#');
-			
-			udpbroadcast.append(aplayer.getPowerLevel() != -1 ? "t" : "f");
-			if(aplayer.getPowerLevel() != -1) {
-				udpbroadcast.append(aplayer.getPowerLevel());
-				udpbroadcast.append(',');
-				udpbroadcast.append(aplayer.getPowerSprite().getRotation());
+			if(!aplayer.changedSignificantly()) {
+				continue;
 			}
 			
-			udpbroadcast.append('&');
+			if(playersdata == null) {
+				playersdata = new StringBuilder("p");
+			}
+			
+			StringBuilder playerdata = new StringBuilder();
+			playerdata.append(i);
+			playerdata.append('&');
+			Sprite sprite = aplayer.getSprite();
+			playerdata.append(sprite.getX());
+			playerdata.append('&');
+			playerdata.append(sprite.getY());
+			playerdata.append('&');
+			playerdata.append(aplayer.getPowerSprite().getRotation());
+			playerdata.append('&');
+			playerdata.append(aplayer.getPowerLevel());
+			
+			ParsingUtils.appendData(playerdata.toString(), playersdata);
 		}
-		udpbroadcast.deleteCharAt(udpbroadcast.length() - 1);
 		
-		udpbroadcast.append(':');
+		if(playersdata != null) {
+			ParsingUtils.appendData(playersdata.toString(), udpbroadcast);
+		}
+		
+		StringBuilder bombsdata = null;
 		
 		for(int i = 0; i < bombs.size; i++) {
-			Sprite sprite = bombs.get(i).getSprite();
-			udpbroadcast.append(sprite.getX());
-			udpbroadcast.append(',');
-			udpbroadcast.append(sprite.getY());
-			udpbroadcast.append(',');
-			udpbroadcast.append(sprite.getRotation());
+			Bomb bomb = bombs.get(i);
 			
-			if(i != bombs.size - 1) udpbroadcast.append('#');
+			if(!bomb.changedSignificantly()) {
+				continue;
+			}
+			
+			if(bombsdata == null) {
+				bombsdata = new StringBuilder("b");
+			}
+			
+			Sprite sprite = bomb.getSprite();
+			
+			StringBuilder bombdata = new StringBuilder();
+			bombdata.append(i);
+			bombdata.append('&');
+			bombdata.append(sprite.getX());
+			bombdata.append('&');
+			bombdata.append(sprite.getY());
+			bombdata.append('&');
+			bombdata.append(sprite.getRotation());
+			
+			ParsingUtils.appendData(bombdata.toString(), bombsdata);	
 		}
 		
-		udpbroadcast.append(':');
+		if(bombsdata != null) {
+			ParsingUtils.appendData(bombsdata.toString(), udpbroadcast);
+		}
 		
-		udpbroadcast.append((int)(matchtime - timer));
-	    
-		udpbroadcast.append(',');
-		
-		udpbroadcast.append((int)(turntime - turntimer));
+		if(timer - prevtimer > 1) {
+			prevtimer = timer;
+			ParsingUtils.appendData("t" + (int)(matchtime - timer) + '&' + (int)(turntime - turntimer), udpbroadcast);
+		}
 		
 		if(udpbroadcast.length() > 0) {
 			udpbridgesender.addMessage(udpbroadcast.toString());
 			udpbroadcast = new StringBuilder();
 		}
+		
 	}
 	
 	private void sendBroadcast() {
