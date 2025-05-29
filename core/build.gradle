@@ -10,4 +10,9 @@ dependencies {
     implementation "io.github.berstanio:gdx-svmhelper-annotations:$graalHelperVersion"
   }
   implementation group: 'org.openpnp', name: 'opencv', version: '4.9.0-0'
+  implementation 'org.slf4j:slf4j-api:2.0.17'
+  implementation 'redis.clients:jedis:6.0.0'
+  implementation 'org.postgresql:postgresql:42.1.4'
+//  implementation 'org.hibernate.orm:hibernate-core:6.6.15.Final'
+  implementation 'com.fasterxml.jackson.core:jackson-databind:2.19.0'
 }

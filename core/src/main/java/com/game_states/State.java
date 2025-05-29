@@ -15,23 +15,25 @@ import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
+import redis.clients.jedis.Jedis;
+
 public class State {
 	//fields
 	public GameStateManager gsm;
 	
-	protected void create() {
+	public void create(String game_id, Jedis jedis) {
 		
 	}
 	
-	protected void render() {
+	public void render() {
 		
 	}
 	
-	protected void dispose() {
+	public void dispose() {
 		
 	}
 	
-	protected void resize(int width,int height) {
+	public void resize(int width,int height) {
 		
 	}
     

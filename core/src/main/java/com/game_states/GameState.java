@@ -3,9 +3,9 @@ package com.game_states;
 import java.net.SocketException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Random;
 
-import com.Connection.RoomConnection;
 import com.GameObjects.Bomb;
 import com.GameObjects.BombContext;
 import com.GameObjects.BombFactory;
@@ -17,6 +17,7 @@ import com.GameObjects.GroundWorld;
 import com.GameObjects.Player;
 import com.GameObjects.PlayerWorld;
 import com.GameObjects.myContactListener;
+import com.JedisManagement.JedisUtils;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
@@ -53,12 +54,13 @@ import com.utils.PointNode;
 import com.utils.WorldUtils;
 import com.utils.polygonGen;
 
+import redis.clients.jedis.Jedis;
+
 public class GameState extends State{
 	private World world;
 	private float accumulator;
 	private Random random;
 	
-	private RoomConnection roomconnection;
 	private StringBuilder removedindicesbroadcast;
 
 	private Array<Player> players;
@@ -84,23 +86,23 @@ public class GameState extends State{
 	private StringBuilder broadcast;
 	private StringBuilder udpbroadcast;
 	
+	String game_id;
+	Jedis jedis;
+	
 	private float timer = 0;
 	private float turntimer = 0;
 	private float prevtimer = 0;
-	private boolean gameended = false;
 	private boolean shouldexit = false;
 	private boolean inputchanged = false;
 	private final float matchtime = 300;
 	private final float turntime = 20;
 	
-	public GameState(RoomConnection roomconnection){
-		this.roomconnection = roomconnection;
-		create();
-	}
-	
 	@Override
-	protected void create() {
+	public void create(String game_id, Jedis jedis) {
 		// TODO Auto-generated method stub
+		this.game_id = game_id;
+		this.jedis = jedis;
+		
 		Box2D.init();
 		world = new World(new Vector2(0,-9.8f), true);
 		world.setContactListener(new myContactListener());
@@ -114,8 +116,10 @@ public class GameState extends State{
 	}
 
 	@Override
-	protected void render() {
+	public void render() {
 		// TODO Auto-generated method stub
+		if(shouldexit) return;
+		
 		float delta = Gdx.graphics.getDeltaTime();
 		
 	    doPhysicsStep(delta);
@@ -141,19 +145,19 @@ public class GameState extends State{
 	}
 
 	@Override
-	protected void dispose() {
+	public void dispose() {
 		// TODO Auto-generated method stub
-		roomconnection.setGameEnded();
 		world.dispose();
 		
 		udpbridgesender.closeSocket();
 		System.out.println("Closed Sender");
 		udpbridgereceiver.closeSocket();
 		System.out.println("Closed Receiver");
+		jedis.close();
 	}
 
 	@Override 
-	protected void resize(int width, int height) {
+	public void resize(int width, int height) {
 		// TODO Auto-generated method stub
 	}
 	
@@ -208,8 +212,8 @@ public class GameState extends State{
 		players = new Array<>();
 		playersmap = new HashMap<>();
 		
-		for(int i = 0; i < roomconnection.size(); i++) {
-			Player aplayer = createPlayer(roomconnection.getName(i), 5 + 3*i, 15);
+		for(int i = 0; i < getPlayersSize(); i++) {
+			Player aplayer = createPlayer(getPlayerName(i), 5 + 3*i, 15);
 			players.add(aplayer);
 		}
 		player = players.get(0);
@@ -238,6 +242,8 @@ public class GameState extends State{
 		fdef.isSensor = true;
 		playerbody.createFixture(fdef).setUserData(playerworld);
 		shp.dispose();
+		
+		player.centerSpriteToHere(x, y);
 		
 		return player;
 	}
@@ -359,7 +365,7 @@ public class GameState extends State{
 		
 		if(inputchanged) {
 			inputchanged = false;
-			ParsingUtils.appendData("i" + roomconnection.getInputIndex(), broadcast);
+			ParsingUtils.appendData("i" + getInputIndex(), broadcast);
 		}
 		
 		boolean atleastone = false;
@@ -433,7 +439,7 @@ public class GameState extends State{
 		}
 		
 		if(broadcast.length() > 0) {
-			roomconnection.addBroadcast(broadcast.toString());
+			addBroadcast(broadcast.toString());
 			broadcast = new StringBuilder();
 		}
 		
@@ -446,15 +452,13 @@ public class GameState extends State{
 		turntimer+=delta;
 		
 		if(turntimer > turntime) {
-			roomconnection.incrementInputIndex(1);
-			inputChanged();
+			changeInputIndex();
 		}
 		
 		removePlayers();
 		
-		if(roomconnection.size() < 2 || timer > matchtime) {
-			shouldexit = true;
-			Gdx.app.exit();
+		if(getPlayersSize() < 2 || timer > matchtime) {
+			endGame();
 			return;
 		}
 		
@@ -565,7 +569,7 @@ public class GameState extends State{
 	}
 	
 	private void removePlayers() {
-		int removedindex = roomconnection.pollRemovedIndex();
+		int removedindex = pollRemovedIndex();
 		
 		if(removedindex == -1) return;
 		
@@ -580,20 +584,20 @@ public class GameState extends State{
 			PlayerWorld playerworld = playersmap.remove(aplayer);
 			playerworld.destroy();
 			
-			removedindex = roomconnection.pollRemovedIndex();
+			removedindex = pollRemovedIndex();
 		}
 		
 		removedindicesbroadcast.deleteCharAt(removedindicesbroadcast.length() - 1);
 		
-		if(roomconnection.getInputIndex() >= roomconnection.size()) {
-			roomconnection.setInputIndex(0);
+		if(getInputIndex() >= getPlayersSize()) {
+			setInputIndex(0);
 			inputChanged();
 		}
 	}
 	
 	private void inputChanged() {
 		player.setPowerLevel(-1);
-		player = players.get(roomconnection.getInputIndex());
+		player = players.get((int)getInputIndex());
 		inputchanged = true;
 		turntimer = 0;
 		launchcount = 0;
@@ -655,6 +659,66 @@ public class GameState extends State{
 		if(i >= inputs.length()) return 0;
 		
 		return ParsingUtils.parseFloat(i, inputs.length(), inputs);
+	}
+	
+	
+	
+	private void setInputIndex(int index) {
+		jedis.hset(game_id, "input_index", String.valueOf(index));
+	}
+	
+	private long getInputIndex() {
+		return Long.parseLong(jedis.hget(game_id, "input_index"));
+	}
+	
+	private long getPlayersSize() {
+		return jedis.llen(game_id + ":players");
+	}
+	
+	private String getPlayerName(int index) {
+		return jedis.lindex(game_id + ":players", index);
+	}
+	
+	private void changeInputIndex() {
+		long input_index = getInputIndex();
+		input_index++;
+		input_index %= getPlayersSize();
+		jedis.hset(game_id, "input_index", String.valueOf(input_index));
+		
+		inputChanged();
+	}
+	
+	private int pollRemovedIndex() {
+		String removed_index = jedis.lpop(game_id + ":removed_indices");
+		return removed_index == null ? -1 : Integer.parseInt(removed_index);
+	}
+	
+	private void addBroadcast(String broadcast) {
+		List<String> players = jedis.lrange(game_id + ":players", 0, -1);
+		
+		for(String username : players) {
+			jedis.rpush(game_id + ":b:" + username, broadcast);
+		}
+		
+	}
+	
+	private void endGame() {
+		System.out.println("Ending game...");
+		
+		shouldexit = true;
+		Gdx.app.exit();
+		
+		jedis.srem("games_set", game_id);
+		jedis.hset(jedis.hget(game_id, "room_id"), "game_id", JedisUtils.None);
+		jedis.del(game_id);
+		
+		List<String> players = jedis.lrange(game_id + ":players", 0, -1);
+		for(String username : players) {
+			jedis.del(game_id + ":b:" + username);
+		}
+		
+		jedis.del(game_id + ":players");
+		jedis.del(game_id + ":removed_indices");
 	}
 	
 }

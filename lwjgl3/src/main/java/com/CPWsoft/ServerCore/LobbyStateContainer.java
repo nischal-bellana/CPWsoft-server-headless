@@ -1,4 +1,4 @@
-package com.CPWsoft.Threads;
+package com.CPWsoft.ServerCore;
 
 public class LobbyStateContainer {
 	boolean roomschanged = false;

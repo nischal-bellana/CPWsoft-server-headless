@@ -12,6 +12,7 @@ buildscript {
 }
 plugins {
   id "application"
+  id("io.freefair.lombok") version "8.13.1"
 }
 apply plugin: 'io.github.fourlastor.construo'
 
@@ -37,6 +38,7 @@ dependencies {
   implementation "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-desktop"
   implementation "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
   api "com.badlogicgames.gdx:gdx-tools:$gdxVersion"
+  
   implementation project(':core')
 
   if(enableGraalNative == 'true') {

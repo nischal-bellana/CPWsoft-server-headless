@@ -8,14 +8,15 @@ import com.badlogic.gdx.tools.texturepacker.TexturePacker;
 import com.game_states.GameState;
 import com.game_states.State;
 
+import redis.clients.jedis.Jedis;
+
 import java.io.*;
 import java.net.*;
 
 import com.CPWsoft.CPWsoft;
-import com.CPWsoft.Threads.ServerThread;
+import com.CPWsoft.ServerCore.ServerThread;
+import com.CPWsoft.ServerCore.nonGameThread;
 import com.badlogic.gdx.tools.texturepacker.TexturePacker.Settings;
-import com.CPWsoft.Threads.nonGameThread;
-import com.Connection.RoomConnection;
 
 /** Launches the desktop (LWJGL3) application. */
 public class Lwjgl3Launcher {
@@ -27,8 +28,8 @@ public class Lwjgl3Launcher {
     	th.run();
     }
     
-    public static HeadlessApplication createHeadlessApplication(RoomConnection roomconnection) {
-    	return new HeadlessApplication(new CPWsoft(roomconnection), getHeadlessApplicationConfiguration());
+    public static HeadlessApplication createHeadlessApplication(String game_id, Jedis jedis) {
+    	return new HeadlessApplication(new CPWsoft(game_id, jedis), getHeadlessApplicationConfiguration());
     }
     
     private static HeadlessApplicationConfiguration getHeadlessApplicationConfiguration() {

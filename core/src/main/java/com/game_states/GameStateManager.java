@@ -1,17 +1,16 @@
 package com.game_states;
 
-import com.Connection.RoomConnection;
+import redis.clients.jedis.Jedis;
 
 public class GameStateManager {
 	public State st;
 	public State next_st;
-	public GameStateManager() {
-		st = new GameState(null);
+	
+	public GameStateManager(String game_id, Jedis jedis) {
+		st = new GameState();
 		st.gsm = this;
-	}
-	public GameStateManager(RoomConnection roomconnection) {
-		this.st = new GameState(roomconnection);
-		st.gsm = this;
+		
+		st.create(game_id, jedis);
 	}
 	
 	public void render() {

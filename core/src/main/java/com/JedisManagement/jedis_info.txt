@@ -1,0 +1,17 @@
+users_set : Set
+[username] - rooms_data_changed, 
+			 inroom_data_changed,
+			 room_id,
+			 ready_for_game
+			 : Hash
+
+[room_id] - target_time, elapsed_time, timer_interrupt, game_id : Hash
+rooms_set : Set
+[room_id":players"] : Set
+[room_id":chat"] : List
+
+games_set : Set
+[game_id] - room_id, input_index : Hash
+[game_id":players"] : List
+[game_id":b:"username"] : List
+[game_id":removed_indices"] : List
